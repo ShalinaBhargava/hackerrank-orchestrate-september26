@@ -1,0 +1,146 @@
+[
+  {
+    "label": "messages_0",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 3752,
+    "output_tokens": 10358
+  },
+  {
+    "label": "messages_30",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 3753,
+    "output_tokens": 14053
+  },
+  {
+    "label": "messages_60",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 3823,
+    "output_tokens": 10160
+  },
+  {
+    "label": "messages_90",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 3855,
+    "output_tokens": 7972
+  },
+  {
+    "label": "messages_120",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 3855,
+    "output_tokens": 8069
+  },
+  {
+    "label": "messages_150",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 3800,
+    "output_tokens": 13323
+  },
+  {
+    "label": "messages_180",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 3762,
+    "output_tokens": 12414
+  },
+  {
+    "label": "messages_210",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 982,
+    "output_tokens": 2443
+  },
+  {
+    "label": "image_01",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1559,
+    "output_tokens": 1160
+  },
+  {
+    "label": "image_02",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1538,
+    "output_tokens": 1184
+  },
+  {
+    "label": "image_03",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1564,
+    "output_tokens": 794
+  },
+  {
+    "label": "image_04",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1564,
+    "output_tokens": 1179
+  },
+  {
+    "label": "image_05",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1524,
+    "output_tokens": 751
+  },
+  {
+    "label": "image_06",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1538,
+    "output_tokens": 1235
+  },
+  {
+    "label": "image_07",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1567,
+    "output_tokens": 876
+  },
+  {
+    "label": "image_08",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1586,
+    "output_tokens": 569
+  },
+  {
+    "label": "image_09",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1541,
+    "output_tokens": 744
+  },
+  {
+    "label": "image_10",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1536,
+    "output_tokens": 769
+  },
+  {
+    "label": "image_11",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1519,
+    "output_tokens": 595
+  },
+  {
+    "label": "image_12",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1548,
+    "output_tokens": 688
+  },
+  {
+    "label": "image_13",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1600,
+    "output_tokens": 760
+  },
+  {
+    "label": "image_14",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1538,
+    "output_tokens": 669
+  },
+  {
+    "label": "image_15",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1576,
+    "output_tokens": 553
+  },
+  {
+    "label": "image_16",
+    "model": "gemini/gemini-3.6-flash",
+    "input_tokens": 1647,
+    "output_tokens": 579
+  }
+]

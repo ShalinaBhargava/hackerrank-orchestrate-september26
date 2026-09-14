@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buy or Wait? Explorer</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1d2330; --muted:#6b7385; --line:#e3e6ec; --accent:#2f6fec;
+          --good:#1a8a4a; --warn:#c07a00; --bad:#c43c3c; --plan:#7b4fd6; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--ink); background:var(--bg); }
+  header { padding:12px 20px; background:#141a26; color:#fff; display:flex; gap:16px; align-items:center; }
+  header h1 { font-size:16px; margin:0; font-weight:600; }
+  header span { color:#9aa3b5; font-size:13px; }
+  .layout { display:grid; grid-template-columns:320px 1fr; height:calc(100vh - 46px); }
+  aside { border-right:1px solid var(--line); background:var(--card); display:flex; flex-direction:column; min-height:0; }
+  .filters { padding:10px; display:grid; gap:6px; border-bottom:1px solid var(--line); }
+  .filters input, .filters select { width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font:inherit; }
+  #list { overflow:auto; flex:1; }
+  .item { padding:8px 12px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .item:hover { background:#f0f4ff; } .item.active { background:#e4ecff; }
+  .item .top { display:flex; justify-content:space-between; font-weight:600; }
+  .item .sub { color:var(--muted); font-size:12px; }
+  main { overflow:auto; padding:16px 20px 40px; }
+  .grid { display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); margin-bottom:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; min-width:0; }
+  .card h2 { margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; }
+  .kv div:nth-child(odd) { color:var(--muted); }
+  .pill { display:inline-block; padding:1px 8px; border-radius:99px; font-size:12px; font-weight:600; background:#eef1f6; margin:1px 2px 1px 0; }
+  .s-affordable_now { background:#dff3e7; color:var(--good); } .s-affordable_with_plan { background:#e8e2fb; color:var(--plan); }
+  .s-affordable_later { background:#fdf0d8; color:var(--warn); } .s-not_affordable { background:#f8e0e0; color:var(--bad); }
+  .protect { background:#dff3e7; color:var(--good); } .reduce { background:#fdf0d8; color:var(--warn); } .stop { background:#f8e0e0; color:var(--bad); }
+  .big { font-size:22px; font-weight:700; }
+  table { border-collapse:collapse; width:100%; font-size:12.5px; }
+  th, td { text-align:left; padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; position:sticky; top:0; background:var(--card); }
+  .scroll { overflow:auto; max-height:360px; }
+  .ok { color:var(--good); font-weight:700; } .no { color:var(--bad); font-weight:700; }
+  .chart { position:relative; height:320px; } .chart.sm { height:260px; }
+  .msg { border-left:3px solid var(--line); padding:4px 10px; margin-bottom:10px; }
+  .msg.after { opacity:.5; }
+  .imgs { display:flex; gap:10px; flex-wrap:wrap; }
+  .imgs figure { margin:0; width:180px; } .imgs img { width:180px; border:1px solid var(--line); border-radius:6px; cursor:zoom-in; }
+  .imgs figcaption { font-size:12px; color:var(--muted); }
+  .muted { color:var(--muted); } .empty { color:var(--muted); padding:40px; text-align:center; }
+  .warn-box { background:#fff6e5; border:1px solid #f1d49b; border-radius:8px; padding:8px 10px; margin-top:8px; font-size:12.5px; }
+  .dtable { table-layout:fixed; font-size:13px; }
+  .dtable th:first-child { width:190px; } .dtable th { font-size:12px; text-transform:uppercase; letter-spacing:.03em; }
+  .dtable td { padding:7px 8px; word-break:break-word; }
+  .dtable tr.mismatch td { background:#fdf1f1; } .dtable tr.match td:last-child { background:#f1faf4; }
+  .dtable td.field { color:var(--muted); font-weight:600; }
+  .src img { width:44px; height:34px; object-fit:cover; border:1px solid var(--line); border-radius:4px; cursor:zoom-in; vertical-align:middle; }
+  .badge { display:inline-block; padding:0 6px; border-radius:4px; font-size:11px; font-weight:600; background:#e4ecff; color:var(--accent); cursor:pointer; margin:1px; }
+  .link { color:var(--accent); cursor:pointer; text-decoration:underline; }
+  tr.flash td { background:#fff3c4 !important; transition:background .3s; }
+  tr.has-src td { background:#f7f9ff; }
+  .msg.flash { background:#fff3c4; }
+  #modal { position:fixed; inset:0; background:rgba(15,20,30,.72); display:flex; align-items:center; justify-content:center; z-index:50; padding:16px; }
+  #modal[hidden] { display:none; }
+  #modal .box { background:#fff; border-radius:10px; max-width:1100px; width:100%; max-height:92vh; overflow:auto; display:grid; grid-template-columns:minmax(0,2fr) minmax(240px,1fr); gap:0; }
+  #modal img { width:100%; display:block; background:#eee; }
+  #modal .info { padding:14px 16px; border-left:1px solid var(--line); }
+  #modal .close { float:right; cursor:pointer; font-size:20px; line-height:1; color:var(--muted); }
+  @media (max-width: 900px) { #modal .box { grid-template-columns:1fr; } }
+  @media (max-width: 900px) { .layout { grid-template-columns:1fr; height:auto; } aside { max-height:40vh; } }
+</style>
+</head>
+<body>
+<header><h1>Buy or Wait? Explorer</h1><span>Correlate each request with its user profile, forecast, evidence and decision</span></header>
+<div class="layout">
+  <aside>
+    <div class="filters">
+      <input id="q" placeholder="Search request / user / type…">
+      <select id="set"><option value="">All sets</option><option value="evaluation">Evaluation (250)</option><option value="sample">Samples (25)</option></select>
+      <select id="status"><option value="">All statuses</option><option>affordable_now</option><option>affordable_with_plan</option><option>affordable_later</option><option>not_affordable</option></select>
+    </div>
+    <div id="list"></div>
+  </aside>
+  <main id="main"><div class="empty">Select a request on the left.</div></main>
+</div>
+<div id="modal" hidden><div class="box"><div><img id="mImg" alt=""></div><div class="info" id="mInfo"></div></div></div>
+<script>
+let ALL = [], charts = [], CUR = null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money = (v, cur) => v == null || v === "" ? "—" : `${cur} ${Number(v).toLocaleString(undefined,{maximumFractionDigits:2})}`;
+const pills = (s, cls="") => String(s ?? "").split("|").filter(x => x && x !== "nan").map(x => `<span class="pill ${cls}">${esc(x)}</span>`).join("") || '<span class="muted">none</span>';
+const COLORS = ["#2f6fec","#1a8a4a","#c07a00","#c43c3c","#7b4fd6","#138f9a","#d65f9c","#5b6b82","#8aa31c","#b35b1e","#3a9ad9","#9b59b6"];
+
+async function loadList() {
+  ALL = await (await fetch("/api/requests")).json();
+  renderList();
+  const first = location.hash.slice(1) || (ALL.find(x => x.set === "sample") || ALL[0]).request_id;
+  select(first);
+}
+function renderList() {
+  const q = $("#q").value.toLowerCase(), set = $("#set").value, st = $("#status").value;
+  const rows = ALL.filter(x => (!set || x.set === set) && (!st || x.status === st) &&
+    (!q || `${x.request_id} ${x.user_id} ${x.request_type}`.toLowerCase().includes(q)));
+  $("#list").innerHTML = rows.map(x => `
+    <div class="item" data-id="${x.request_id}">
+      <div class="top"><span>${x.request_id}</span><span class="pill s-${x.status}">${esc(x.status || "—")}</span></div>
+      <div class="sub">${x.user_id} · ${x.request_type} · ${money(x.requested_amount, x.currency)} ${x.set === "sample" ? "· sample" : ""}</div>
+    </div>`).join("");
+  document.querySelectorAll(".item").forEach(el => el.onclick = () => select(el.dataset.id));
+  markActive();
+}
+function markActive() {
+  document.querySelectorAll(".item").forEach(el => el.classList.toggle("active", el.dataset.id === location.hash.slice(1)));
+}
+["#q","#set","#status"].forEach(s => $(s).addEventListener("input", renderList));
+
+async function select(id) {
+  location.hash = id; markActive();
+  $("#main").innerHTML = '<div class="empty">Loading…</div>';
+  const r = await fetch(`/api/request/${id}`);
+  if (!r.ok) { $("#main").innerHTML = `<div class="empty">Could not load ${esc(id)}</div>`; return; }
+  render(await r.json());
+}
+
+function render(d) {
+  charts.forEach(c => c.destroy()); charts = []; CUR = d;
+  const p = d.profile, cur = p.home_currency, q = d.request, dec = d.decision, t = d.truth, f = d.forecast;
+  const cmp = k => t ? (String(t[k] ?? "") === String(dec[k] ?? "") || (k === "amount_safe_to_pay" && Math.abs(+t[k] - +dec[k]) < 0.011)
+      ? ' <span class="ok">✓</span>' : ` <span class="no">✗</span> <span class="muted">expected ${esc(t[k] || "—")}</span>`) : "";
+  const guardInfo = [d.guard.violations && `Downgraded: ${d.guard.violations}`, d.guard.blocked && `Blocked: ${d.guard.blocked}`,
+                     d.guard.notes && `Evidence guards: ${d.guard.notes}`].filter(Boolean);
+  $("#main").innerHTML = `
+  <div class="grid">
+    <div class="card"><h2>User profile · ${esc(p.user_id)}</h2>
+      <div class="kv">
+        <div>Available balance</div><div class="big">${money(p.current_available_balance, cur)}</div>
+        <div>Minimum to keep</div><div><b>${money(p.minimum_balance_to_keep, cur)}</b></div>
+        <div>Headroom today</div><div>${money(p.current_available_balance - p.minimum_balance_to_keep, cur)}</div>
+        <div>Priorities</div><div>${pills(p.financial_priorities)}</div>
+        <div>Protected</div><div>${pills(p.expense_categories_to_protect, "protect")}</div>
+        <div>Willing to reduce</div><div>${pills(p.expense_categories_user_is_willing_to_reduce, "reduce")}</div>
+        <div>Willing to stop</div><div>${pills(p.expense_categories_user_is_willing_to_stop, "stop")}</div>
+        <div>Payment methods</div><div>${pills(p.payment_methods_user_will_consider)}</div>
+        <div>Max installments</div><div>${p.max_installment_months ?? '<span class="muted">won\'t consider</span>'}</div>
+      </div></div>
+    <div class="card"><h2>Request · ${esc(q.request_id)} (${d.set})</h2>
+      <p style="margin-top:0">“${esc(q.request_text)}”</p>
+      <div class="kv">
+        <div>Type</div><div>${esc(q.request_type)}</div>
+        <div>Amount</div><div class="big">${money(q.requested_amount, cur)}</div>
+        <div>Request date</div><div>${q.request_date}</div>
+        <div>Complete by</div><div>${q.desired_completion_date}</div>
+        <div>Partial allowed</div><div>${q.allows_partial_payment}</div>
+      </div></div>
+    <div class="card" style="grid-column:1/-1"><h2>Decision ${t ? "vs. sample answer" : "(evaluation request — no sample answer)"}</h2>
+      ${decisionTable(dec, t, cur)}
+      ${guardInfo.length ? `<div class="warn-box">${guardInfo.map(esc).join("<br>")}</div>` : ""}
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><h2>90-day balance forecast</h2><div class="chart"><canvas id="cBal"></canvas></div>
+    <div class="muted" style="margin-top:6px">Forecast notes: ${f.notes.length ? f.notes.map(esc).join(" · ") : "none"}${f.flags.length ? ` · <b class="no">flags: ${f.flags.map(esc).join(", ")}</b>` : ""}</div></div>
+  <div class="grid">
+    <div class="card"><h2>Monthly cash flow (last 6 months, ${cur})</h2><div class="chart sm"><canvas id="cMonth"></canvas></div></div>
+    <div class="card"><h2>Spending by category (last 90 days)</h2><div class="chart sm"><canvas id="cCat"></canvas></div></div>
+    <div class="card"><h2>What the forecast projects (90 days)</h2><div class="chart sm"><canvas id="cFlows"></canvas></div></div>
+  </div>
+  <div class="grid">
+    <div class="card"><h2>Payment options</h2><div class="scroll">${table(d.options, ["payment_option_id","payment_method","payment_amount","number_of_payments","first_payment_date","payment_frequency_days","financing_fee","total_payable_amount"])}</div></div>
+    <div class="card"><h2>Open / unusual events</h2><div class="scroll">${eventTable(d.open_events, "open", ["event_id","description","direction","amount","currency","settlement_date","status","linked_event_id"])}</div></div>
+  </div>
+  <div class="grid">
+    <div class="card"><h2>Messages (with extracted facts)</h2><div class="scroll">${d.messages.length ? d.messages.map(m => `
+      <div class="msg ${m.after_request ? "after" : ""}" id="msg-${esc(m.message_id)}"><div class="muted">${m.sent_at.slice(0,10)} · ${esc(m.source_type)} ${m.request_id ? "· " + esc(m.request_id) : ""} ${m.related_event_id ? `· <span class="link" onclick="jumpEvent('${esc(m.related_event_id)}')">${esc(m.related_event_id)}</span>` : ""} ${m.after_request ? "· after request (ignored)" : ""}</div>
+      <div>${esc(m.text)}</div>
+      <div><span class="pill">${esc(m.kind || "not extracted")}</span> ${m.amount != null ? money(m.amount, "") : ""} ${m.effective_date ? "from " + esc(m.effective_date) : ""} <span class="muted">${esc(m.summary || "")}</span></div></div>`).join("") : '<span class="muted">No messages</span>'}</div></div>
+    <div class="card"><h2>Images</h2>${d.images.length ? `<div class="imgs">${d.images.map(im => `
+      <figure><img src="${im.url}" alt="${esc(im.image_id)}" onclick="openImage('${esc(im.related_event_id)}')">
+      <figcaption>${esc(im.image_id)} → <span class="link" onclick="jumpEvent('${esc(im.related_event_id)}')">${esc(im.related_event_id)}</span><br><b>${money(im.amount, im.currency || "")}</b> · ${esc(im.document_type || "")}<br>${esc(im.notes || "")}</figcaption></figure>`).join("")}</div>` : '<span class="muted">No images</span>'}</div>
+  </div>
+  <div class="card"><h2>Recent events (latest 60 before request + all events with a source image/message) · click a thumbnail to see the source</h2><div class="scroll">${eventTable(d.recent_events, "recent", ["event_date","event_id","event_type","description","category","direction","amount","currency","status","linked_event_id","flexibility","minimum_allowed_amount"])}</div></div>`;
+
+  // balance forecast
+  const min = f.minimum, req = f.requested;
+  const ds = [
+    { label: "Projected balance (no payment)", data: f.baseline, borderColor: "#2f6fec", backgroundColor: "rgba(47,111,236,.08)", fill: true, pointRadius: 0, borderWidth: 2 },
+    { label: "Minimum balance to keep", data: f.dates.map(() => min), borderColor: "#c43c3c", borderDash: [6,4], pointRadius: 0, borderWidth: 1.5 },
+    { label: "Minimum + full amount", data: f.dates.map(() => min + req), borderColor: "#c07a00", borderDash: [2,3], pointRadius: 0, borderWidth: 1.2 },
+  ];
+  if (f.with_plan) ds.splice(1, 0, { label: "Balance with recommended plan", data: f.with_plan, borderColor: "#7b4fd6", pointRadius: 0, borderWidth: 2 });
+  const payIdx = new Set(f.payments.map(x => f.dates.indexOf(x.date)));
+  if (f.payments.length) ds.push({ label: "Payments", type: "scatter", data: f.dates.map((dt, i) => payIdx.has(i) ? (f.with_plan || f.baseline)[i] : null),
+    borderColor: "#7b4fd6", backgroundColor: "#7b4fd6", pointRadius: 6, pointStyle: "rectRot", showLine: false });
+  const markers = { deadline: f.dates.indexOf(f.deadline), earliest: f.dates.indexOf(dec.earliest_date_for_full_payment) };
+  charts.push(new Chart($("#cBal"), { type: "line", data: { labels: f.dates, datasets: ds },
+    options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { tooltip: { callbacks: { label: c => c.raw == null ? null : `${c.dataset.label}: ${money(c.raw, cur)}` } } },
+      scales: { y: { ticks: { callback: v => Number(v).toLocaleString() } }, x: { ticks: { maxTicksLimit: 12 } } } },
+    plugins: [{ id: "markers", afterDatasetsDraw(chart) {
+      const { ctx, chartArea: a, scales: { x } } = chart;
+      [["deadline", "#c43c3c", "complete by"], ["earliest", "#1a8a4a", "earliest full"]].forEach(([k, color, text]) => {
+        if (markers[k] < 0) return; const px = x.getPixelForValue(markers[k]);
+        ctx.save(); ctx.strokeStyle = color; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke();
+        ctx.fillStyle = color; ctx.font = "11px system-ui"; ctx.fillText(text, px + 4, a.top + 12 + (k === "earliest" ? 14 : 0)); ctx.restore();
+      }); } }] }));
+
+  // monthly cash flow
+  const months = d.history.months, cats = [...new Set(months.flatMap(m => Object.keys(d.history.monthly[m].expenses)))];
+  charts.push(new Chart($("#cMonth"), { type: "bar", data: { labels: months, datasets: [
+      { label: "Income", data: months.map(m => d.history.monthly[m].income), backgroundColor: "#1a8a4a", stack: "in" },
+      ...cats.map((c, i) => ({ label: c, data: months.map(m => d.history.monthly[m].expenses[c] || 0), backgroundColor: COLORS[(i + 2) % COLORS.length], stack: "out" }))] },
+    options: { maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { x: { stacked: true }, y: { stacked: true } } } }));
+
+  // category doughnut, coloured by the user's preference for that category
+  const prot = new Set(String(p.expense_categories_to_protect).split("|")), red = new Set(String(p.expense_categories_user_is_willing_to_reduce).split("|")),
+        stp = new Set(String(p.expense_categories_user_is_willing_to_stop).split("|"));
+  const tag = c => prot.has(c) ? "protected" : stp.has(c) ? "can stop" : red.has(c) ? "can reduce" : "other";
+  charts.push(new Chart($("#cCat"), { type: "doughnut", data: { labels: d.history.category_90d.map(x => `${x.category} (${tag(x.category)})`),
+      datasets: [{ data: d.history.category_90d.map(x => x.total), backgroundColor: d.history.category_90d.map((x, i) => COLORS[i % COLORS.length]) }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { position: "right", labels: { boxWidth: 10, font: { size: 10 } } } } } }));
+
+  // projected flows
+  const fl = f.flows.filter(x => Math.abs(x.total) > 0);
+  charts.push(new Chart($("#cFlows"), { type: "bar", data: { labels: fl.map(x => `${x.key.split("|")[0]} (${x.kind.replace("recurring_", "")})`),
+      datasets: [{ label: `Projected total (${cur})`, data: fl.map(x => x.total), backgroundColor: fl.map(x => x.total >= 0 ? "#1a8a4a" : x.flexibility !== "fixed" ? "#c07a00" : "#5b6b82") }] },
+    options: { indexAxis: "y", maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { font: { size: 10 } } } } } }));
+}
+
+function decisionTable(dec, t, cur) {
+  const fields = [
+    ["affordability_status", "Affordability status"], ["recommended_payment_method", "Payment method"],
+    ["amount_safe_to_pay", "Amount safe to pay today"], ["payment_plan", "Payment plan"],
+    ["earliest_date_for_full_payment", "Earliest full payment"], ["spending_changes_needed", "Spending changes"],
+    ["decision_explanation", "Explanation"]];
+  const norm = (k, v) => {
+    v = String(v ?? "");
+    if (k === "payment_plan" && v && v !== "none") return v.split("|").map(x => { const [d, a] = x.split(":"); return `${d}:${(+a).toFixed(2)}`; }).join("|");
+    return v;
+  };
+  const same = (k) => k === "amount_safe_to_pay" ? Math.abs(+t[k] - +dec[k]) < 0.011 : norm(k, t[k]) === norm(k, dec[k]);
+  const show = (k, v) => {
+    if (v == null || v === "") return '<span class="muted">—</span>';
+    if (k === "affordability_status") return `<span class="pill s-${esc(v)}">${esc(v)}</span>`;
+    if (k === "amount_safe_to_pay") return `<b>${money(v, cur)}</b>`;
+    if (k === "payment_plan" || k === "spending_changes_needed") return pills(v);
+    return esc(v);
+  };
+  return `<table class="dtable"><thead><tr><th>Field</th><th>Our decision</th><th>Sample answer</th></tr></thead><tbody>${
+    fields.map(([k, label]) => {
+      const scored = t && k !== "decision_explanation";
+      const ok = scored ? same(k) : null;
+      const mark = ok === null ? "" : ok ? ' <span class="ok">✓</span>' : ' <span class="no">✗</span>';
+      return `<tr class="${ok === null ? "" : ok ? "match" : "mismatch"}"><td class="field">${label}</td><td>${show(k, dec[k])}</td><td>${
+        t ? show(k, t[k]) + mark : '<span class="muted">n/a (not a sample)</span>'}</td></tr>`;
+    }).join("")}</tbody></table>${t ? `<div class="muted" style="margin-top:6px">${
+      fields.filter(([k]) => k !== "decision_explanation" && same(k)).length}/6 scored fields match</div>` : ""}`;
+}
+function eventTable(rows, prefix, cols) {
+  if (!rows || !rows.length) return '<span class="muted">none</span>';
+  const cell = (r, c) => {
+    if (c === "amount" && (r.amount == null || r.amount === "")) {
+      return r.image_amount != null ? `<b>${esc(r.image_amount)}</b> <span class="muted">(from image)</span>` : '<span class="no">blank</span>';
+    }
+    if (c === "linked_event_id" && r[c]) return `<span class="link" onclick="jumpEvent('${esc(r[c])}')">${esc(r[c])}</span>`;
+    return esc(r[c] ?? "");
+  };
+  return `<table><thead><tr><th>source</th>${cols.map(c => `<th>${c.replace(/_/g, " ")}</th>`).join("")}</tr></thead><tbody>${
+    rows.map(r => `<tr id="${prefix}-${esc(r.event_id)}" data-event="${esc(r.event_id)}" class="${r.image_id || r.message_ids.length ? "has-src" : ""}"><td class="src">${
+      r.image_id ? `<img src="${r.image_url}" title="${esc(r.image_id)}: open source image" onclick="openImage('${esc(r.event_id)}')">` : ""}${
+      r.message_ids.map(m => `<span class="badge" title="jump to message" onclick="jumpMessage('${esc(m)}')">${esc(m.replace("message_", "msg "))}</span>`).join("")
+    }</td>${cols.map(c => `<td>${cell(r, c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+function findEvent(id) {
+  return [...(CUR?.recent_events || []), ...(CUR?.open_events || [])].find(e => e.event_id === id);
+}
+function openImage(eventId) {
+  const e = findEvent(eventId); if (!e || !e.image_url) return;
+  $("#mImg").src = e.image_url;
+  $("#mInfo").innerHTML = `<span class="close" onclick="closeModal()">×</span><h2 style="margin-top:0">${esc(e.image_id)}</h2>
+    <div class="kv">
+      <div>Event</div><div><b>${esc(e.event_id)}</b></div>
+      <div>Description</div><div>${esc(e.description)}</div>
+      <div>Category</div><div>${esc(e.category)} · ${esc(e.direction)}</div>
+      <div>Status</div><div>${esc(e.status)}</div>
+      <div>Event date</div><div>${esc(e.event_date)}</div>
+      <div>Settles</div><div>${esc(e.settlement_date ?? "—")}</div>
+      <div>Amount in feed</div><div>${e.amount == null ? '<span class="no">blank</span>' : esc(e.amount + " " + e.currency)}</div>
+      <div>Read from image</div><div><b>${esc(e.image_amount ?? "—")} ${esc(e.image_currency ?? "")}</b></div>
+      <div>Document</div><div>${esc(e.image_doc ?? "—")}</div>
+    </div>
+    <p class="muted">${esc(e.image_notes ?? "")}</p>
+    ${e.message_ids.length ? `<p>Related messages: ${e.message_ids.map(m => `<span class="badge" onclick="closeModal();jumpMessage('${esc(m)}')">${esc(m)}</span>`).join("")}</p>` : ""}
+    <p><a href="${e.image_url}" target="_blank">Open full size ↗</a></p>`;
+  $("#modal").hidden = false;
+}
+function closeModal() { $("#modal").hidden = true; $("#mImg").src = ""; }
+$("#modal").addEventListener("click", ev => { if (ev.target.id === "modal") closeModal(); });
+document.addEventListener("keydown", ev => { if (ev.key === "Escape") closeModal(); });
+function flash(el) {
+  if (!el) return false;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1800);
+  return true;
+}
+function jumpEvent(id) { flash(document.getElementById(`recent-${id}`)) || flash(document.getElementById(`open-${id}`)); }
+function jumpMessage(id) { flash(document.getElementById(`msg-${id}`)); }
+
+function table(rows, cols) {
+  if (!rows || !rows.length) return '<span class="muted">none</span>';
+  return `<table><thead><tr>${cols.map(c => `<th>${c.replace(/_/g, " ")}</th>`).join("")}</tr></thead><tbody>${
+    rows.map(r => `<tr>${cols.map(c => `<td>${esc(r[c] ?? "")}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+window.addEventListener("hashchange", () => { if (location.hash.slice(1)) select(location.hash.slice(1)); });
+loadList();
+</script>
+</body>
+</html>
